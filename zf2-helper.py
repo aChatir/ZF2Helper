@@ -12,6 +12,10 @@ import json
 import re
 
 
+# Compile all regex first
+first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+all_cap_re = re.compile('([a-z0-9])([A-Z])')
+
 ## Create a Zend Framework 2 module structure
 class CreatemoduleCommand(sublime_plugin.WindowCommand):
 
@@ -32,9 +36,11 @@ class CreatemoduleCommand(sublime_plugin.WindowCommand):
 
     # Create ZF2 Module
     def create_zf2_module_structure(self):
+        view_folder_name = utility_methods.convertCamelCaseToDash(self.modulename)
         x = open(sublime.packages_path() + "/PHP Zend Framework 2 Helper/zf2-helper/files.json").read()
         x = x.replace('_MODULENAME_', self.modulename)
         x = x.replace('_ROUTENAME_', self.modulename.lower())
+        x = x.replace('_VIEWNAME_', view_folder_name)
 
         zf2_files = json.loads(x)
 
@@ -52,9 +58,11 @@ class CreatemoduleCommand(sublime_plugin.WindowCommand):
 
     # Mapping of template to module files stored json file
     def create_files_from_helper_config(self):
+        view_folder_name = utility_methods.convertCamelCaseToDash(self.modulename)
         x = open(sublime.packages_path() + "/PHP Zend Framework 2 Helper/zf2-helper/files.json").read()
         x = x.replace('_MODULENAME_', self.modulename)
         x = x.replace('_ROUTENAME_', self.modulename.lower())
+        x = x.replace('_VIEWNAME_', view_folder_name)
 
         zf2_files = json.loads(x)
 
@@ -89,8 +97,10 @@ class CreatecontrolleractionCommand(sublime_plugin.TextCommand):
 
     # Create the action controller view file and controller method
     def create_action(self, action_name):
+        view_folder_name = utility_methods.convertCamelCaseToDash(self.modulename)
+
         # Figure out the view file path
-        view_file = self.module_base_path + "/view/" + self.module_name.lower() + "/" + self.module_name.lower() + "/" + action_name + ".phtml"
+        view_file = self.module_base_path + "/view/" + view_folder_name  + "/" + view_folder_name + "/" + action_name + ".phtml"
 
         zf = open(sublime.packages_path() + "/PHP Zend Framework 2 Helper/zf2-helper/view.phtml.template").read()
 
@@ -113,7 +123,7 @@ class CreatecontrolleractionCommand(sublime_plugin.TextCommand):
 class InsertEditCommand(sublime_plugin.TextCommand):
 
     def run(self, edit, pos, content):
-        self.view.insert(edit, pos, content) 
+        self.view.insert(edit, pos, content)
 
 # Static utility methods for use in all commands
 class utility_methods():
@@ -123,6 +133,7 @@ class utility_methods():
         zf = open(sublime_base_path + "/PHP Zend Framework 2 Helper" + path).read()
         zf = zf.replace('_MODULENAME_', module_name)
         zf = zf.replace('_ROUTENAME_', utility_methods.get_routename_from_moduleName(module_name))
+        zf = zf.replace('_VIEWNAME_', utility_methods.convertCamelCaseToDash(module_name))
         return zf
 
     # Generate route name from the module name supplied
@@ -130,3 +141,11 @@ class utility_methods():
     def get_routename_from_moduleName(module_name):
         # TODO take into account multiple capitals in the module name
         return module_name.lower()
+
+    # Convert module name from camelCase to camel-case, needed for zf2 view folders
+    @staticmethod
+    def convertCamelCaseToDash(module_name):
+        global first_cap_re
+        global all_cap_re
+        s1 = first_cap_re.sub(r'\1-\2', module_name)
+        return all_cap_re.sub(r'\1-\2', s1).lower()
